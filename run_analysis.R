@@ -1,4 +1,4 @@
-  setwd("C:/COursera Getting and Cleansing Data Projects/getdata-projectfiles-UCI HAR Dataset/UCI HAR Dataset/")
+setwd("C:/COursera Getting and Cleansing Data Projects/getdata-projectfiles-UCI HAR Dataset/UCI HAR Dataset/")
 getwd()
 # Read in the data from files
 features     = read.table('./features.txt',header=FALSE); #imports features.txt
@@ -37,3 +37,28 @@ logicalVector==TRUE
 finalData = finalData[logicalVector==TRUE];
 finalData = merge(finalData,activityType,by='activityId',all.x=TRUE);
 finalData
+
+colNames  = colnames(finalData); 
+colNames
+
+
+for (i in 1:length(colNames)) 
+{
+  colNames[i] = gsub("\\()","",colNames[i])
+  colNames[i] = gsub("-std$","StdDev",colNames[i])
+  colNames[i] = gsub("-mean","Mean",colNames[i])
+  colNames[i] = gsub("^(t)","time",colNames[i])
+  colNames[i] = gsub("^(f)","freq",colNames[i])
+  colNames[i] = gsub("([Gg]ravity)","Gravity",colNames[i])
+  colNames[i] = gsub("([Bb]ody[Bb]ody|[Bb]ody)","Body",colNames[i])
+  colNames[i] = gsub("[Gg]yro","Gyro",colNames[i])
+  colNames[i] = gsub("AccMag","AccMagnitude",colNames[i])
+  colNames[i] = gsub("([Bb]odyaccjerkmag)","BodyAccJerkMagnitude",colNames[i])
+  colNames[i] = gsub("JerkMag","JerkMagnitude",colNames[i])
+  colNames[i] = gsub("GyroMag","GyroMagnitude",colNames[i])
+};
+
+colnames(finalData) = colNames;
+head(finalData)
+
+write.table(finalData, './tidyData.txt',row.names=TRUE,sep='\t');
