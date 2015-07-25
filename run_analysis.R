@@ -1,64 +1,72 @@
-setwd("C:/COursera Getting and Cleansing Data Projects/getdata-projectfiles-UCI HAR Dataset/UCI HAR Dataset/")
 getwd()
-# Read in the data from files
-features     = read.table('./features.txt',header=FALSE); #imports features.txt
-head(features)
-features
-activityType = read.table('./activity_labels.txt',header=FALSE); #imports activity_labels.txt
-head(activityType)
-subjectTrain = read.table('./train/subject_train.txt',header=FALSE); #imports subject_train.txt
-head(subjectTrain)
-xTrain       = read.table('./train/x_train.txt',header=FALSE); #imports x_train.txt
-head(xTrain)
-yTrain       = read.table('./train/y_train.txt',header=FALSE); #imports y_train.txt
-head(yTrain)
-colnames(activityType)  = c('activityId','activityType');
-colnames(subjectTrain)  = "subjectId";
-colnames(xTrain)        = features[,2]; 
-colnames(yTrain)        = "activityId";
+setwd("C:/Users/somasna/Documents/Course3")
+unzip(zipfile="./getdata-projectfiles-UCI HAR Dataset.zip",exdir="./data")
 
-trainingData = cbind(yTrain,subjectTrain,xTrain);
+path_rf <- file.path("./data" , "UCI HAR Dataset")
+files<-list.files(path_rf, recursive=TRUE)
+files
+path_rf
 
-subjectTest = read.table('./test/subject_test.txt',header=FALSE); #imports subject_test.txt
-xTest       = read.table('./test/x_test.txt',header=FALSE); #imports x_test.txt
-yTest       = read.table('./test/y_test.txt',header=FALSE); #imports y_test.txt
+dataActivityTest  <- read.table(file.path(path_rf, "test" , "Y_test.txt" ),header = FALSE)
+dataActivityTrain <- read.table(file.path(path_rf, "train", "Y_train.txt"),header = FALSE)
 
-colnames(subjectTest) = "subjectId";
-colnames(xTest)       = features[,2]; 
-colnames(yTest)       = "activityId";
-testData = cbind(yTest,subjectTest,xTest);
-head(testData)
+dataSubjectTrain <- read.table(file.path(path_rf, "train", "subject_train.txt"),header = FALSE)
+dataSubjectTest  <- read.table(file.path(path_rf, "test" , "subject_test.txt"),header = FALSE)
 
-finalData = rbind(trainingData,testData);
-colNames  = colnames(finalData); 
+dataFeaturesTest  <- read.table(file.path(path_rf, "test" , "X_test.txt" ),header = FALSE)
+dataFeaturesTrain <- read.table(file.path(path_rf, "train", "X_train.txt"),header = FALSE)
 
-logicalVector = (grepl("activity..",colNames) | grepl("subject..",colNames) | grepl("-mean..",colNames) & !grepl("-meanFreq..",colNames) & !grepl("mean..-",colNames) | grepl("-std..",colNames) & !grepl("-std()..-",colNames));
-logicalVector==TRUE
-finalData = finalData[logicalVector==TRUE];
-finalData = merge(finalData,activityType,by='activityId',all.x=TRUE);
-finalData
+str(dataActivityTest)
+str(dataActivityTrain)
+str(dataSubjectTrain)
+str(dataSubjectTest)
+str(dataFeaturesTest)
+str(dataFeaturesTrain)
 
-colNames  = colnames(finalData); 
-colNames
+head(dataSubjectTrain)
+head(dataSubjectTest)
+
+head(dataActivityTrain)
+head(dataActivityTest)
+
+head(dataFeaturesTrain)
+head(dataFeaturesTest)
+
+dataSubject <- rbind(dataSubjectTrain, dataSubjectTest)
+dataActivity<- rbind(dataActivityTrain, dataActivityTest)
+dataFeatures<- rbind(dataFeaturesTrain, dataFeaturesTest)
+
+head(dataSubject)
+head(dataActivity)
+head(dataFeatures)
+
+names(dataSubject)<-c("subject")
+names(dataActivity)<- c("activity")
+dataFeaturesNames <- read.table(file.path(path_rf, "features.txt"),head=FALSE)
+dataFeaturesNames
+names(dataFeatures)<- dataFeaturesNames$V2
 
 
-for (i in 1:length(colNames)) 
-{
-  colNames[i] = gsub("\\()","",colNames[i])
-  colNames[i] = gsub("-std$","StdDev",colNames[i])
-  colNames[i] = gsub("-mean","Mean",colNames[i])
-  colNames[i] = gsub("^(t)","time",colNames[i])
-  colNames[i] = gsub("^(f)","freq",colNames[i])
-  colNames[i] = gsub("([Gg]ravity)","Gravity",colNames[i])
-  colNames[i] = gsub("([Bb]ody[Bb]ody|[Bb]ody)","Body",colNames[i])
-  colNames[i] = gsub("[Gg]yro","Gyro",colNames[i])
-  colNames[i] = gsub("AccMag","AccMagnitude",colNames[i])
-  colNames[i] = gsub("([Bb]odyaccjerkmag)","BodyAccJerkMagnitude",colNames[i])
-  colNames[i] = gsub("JerkMag","JerkMagnitude",colNames[i])
-  colNames[i] = gsub("GyroMag","GyroMagnitude",colNames[i])
-};
+dataCombine <- cbind(dataSubject, dataActivity)
+Data <- cbind(dataFeatures, dataCombine)
+subdataFeaturesNames<-dataFeaturesNames$V2[grep("mean\\(\\)|std\\(\\)", dataFeaturesNames$V2)]
+selectedNames<-c(as.character(subdataFeaturesNames), "subject", "activity" )
+Data<-subset(Data,select=selectedNames)
+str(Data)
 
-colnames(finalData) = colNames;
-head(finalData)
+activityLabels <- read.table(file.path(path_rf, "activity_labels.txt"),header = FALSE)
 
-write.table(finalData, './tidyData.txt',row.names=TRUE,sep='\t');
+
+names(Data)<-gsub("^t", "time", names(Data))
+names(Data)<-gsub("^f", "frequency", names(Data))
+names(Data)<-gsub("Acc", "Accelerometer", names(Data))
+names(Data)<-gsub("Gyro", "Gyroscope", names(Data))
+names(Data)<-gsub("Mag", "Magnitude", names(Data))
+names(Data)<-gsub("BodyBody", "Body", names(Data))
+
+names(Data)
+
+library(plyr);
+Data2<-aggregate(. ~subject + activity, Data, mean)
+Data2<-Data2[order(Data2$subject,Data2$activity),]
+write.table(Data2, file = "tidydata.txt",row.name=FALSE)
